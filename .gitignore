@@ -1,0 +1,23 @@
+
+# Visual Studio / .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.vs/
+.vs/
+
+# Rider
+.idea/
+
+# Node / front-end
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

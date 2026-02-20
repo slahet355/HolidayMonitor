@@ -35,11 +35,12 @@ builder.Host.UseNServiceBus(hostContext =>
 {
     var config = hostContext.Configuration;
     var endpointConfiguration = new EndpointConfiguration("UserPref.Api");
-    endpointConfiguration.UseTransport<RabbitMQTransport>()
-        .ConnectionString(config.GetConnectionString("RabbitMQ") ?? "host=localhost")
+    endpointConfiguration.UseSerialization<XmlSerializer>();
+    var transport = endpointConfiguration.UseTransport<RabbitMQTransport>();
+    transport.ConnectionString(config.GetConnectionString("RabbitMQ") ?? "host=localhost")
         .UseConventionalRoutingTopology(QueueType.Classic);
     endpointConfiguration.EnableInstallers();
-    var routing = endpointConfiguration.UseTransport<RabbitMQTransport>().Routing();
+    var routing = transport.Routing();
     routing.RouteToEndpoint(typeof(NotifyUsersCommand), "Notifier.Api");
     return endpointConfiguration;
 });

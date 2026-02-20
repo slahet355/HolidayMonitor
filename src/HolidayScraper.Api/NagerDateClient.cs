@@ -29,7 +29,7 @@ public class NagerDateHoliday
 
 public class NagerDateClient
 {
-    private const string BaseUrl = "https://date.nager.at/api/v3";
+    private const string BaseUrl = "https://date.nager.at/api/v3/";
     private readonly HttpClient _http;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -45,7 +45,7 @@ public class NagerDateClient
 
     public async Task<List<NagerDateHoliday>> GetPublicHolidaysAsync(int year, string countryCode, CancellationToken ct = default)
     {
-        var response = await _http.GetAsync($"/PublicHolidays/{year}/{countryCode}", ct);
+        var response = await _http.GetAsync($"PublicHolidays/{year}/{countryCode}", ct);
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync(ct);
         var list = JsonSerializer.Deserialize<List<NagerDateHoliday>>(json, JsonOptions);
@@ -54,7 +54,7 @@ public class NagerDateClient
 
     public async Task<List<string>> GetAvailableCountriesAsync(CancellationToken ct = default)
     {
-        var response = await _http.GetAsync("/AvailableCountries", ct);
+        var response = await _http.GetAsync("AvailableCountries", ct);
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadAsStringAsync(ct);
         var list = JsonSerializer.Deserialize<List<CountryEntry>>(json, JsonOptions);

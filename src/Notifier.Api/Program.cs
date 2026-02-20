@@ -37,6 +37,7 @@ builder.Host.UseNServiceBus(hostContext =>
 {
     var config = hostContext.Configuration;
     var endpointConfiguration = new EndpointConfiguration("Notifier.Api");
+    endpointConfiguration.UseSerialization<XmlSerializer>();
     endpointConfiguration.UseTransport<RabbitMQTransport>()
         .ConnectionString(config.GetConnectionString("RabbitMQ") ?? "host=localhost")
         .UseConventionalRoutingTopology(QueueType.Classic);

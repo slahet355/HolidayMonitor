@@ -3,6 +3,7 @@ using HolidayScraper.Api;
 using NServiceBus;
 using NServiceBus.Transport.RabbitMQ;
 using OpenTelemetry.Resources;
+// using NServiceBus.Newtonsoft.Json; removed — using built-in XmlSerializer instead
 using OpenTelemetry.Trace;
 
 var host = Host.CreateDefaultBuilder(args)
@@ -10,6 +11,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var config = hostContext.Configuration;
         var endpointConfiguration = new EndpointConfiguration("HolidayScraper.Api");
+        endpointConfiguration.UseSerialization<XmlSerializer>();
         endpointConfiguration.UseTransport<RabbitMQTransport>()
             .ConnectionString(config.GetConnectionString("RabbitMQ") ?? "host=localhost")
             .UseConventionalRoutingTopology(QueueType.Classic);

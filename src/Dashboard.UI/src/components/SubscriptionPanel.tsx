@@ -22,7 +22,7 @@ interface Props {
   onCountriesChange: (codes: string[]) => void
 }
 
-export function SubscriptionPanel({ userId, countryCodes, loading, onCountriesChange }: Props) {
+export function SubscriptionPanel({ userId: _userId, countryCodes, loading, onCountriesChange }: Props) {
   const [newCode, setNewCode] = useState('')
 
   const add = (code: string) => {
@@ -57,7 +57,7 @@ export function SubscriptionPanel({ userId, countryCodes, loading, onCountriesCh
             />
             <button
               type="button"
-              onClick={() => add(newCode) || setNewCode('')}
+              onClick={() => { add(newCode); setNewCode(''); }}
               className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
             >
               Add

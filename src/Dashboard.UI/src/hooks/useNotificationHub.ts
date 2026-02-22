@@ -2,7 +2,19 @@ import { useEffect, useState, useRef } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { HolidayAlert } from '../types'
 
-const defaultUrl = typeof window !== 'undefined' ? `${window.location.origin}/hubs` : ''
+// For development: connect directly to Notifier.Api on port 5002
+// Avoids proxy issues with WebSocket negotiation through Vite dev server
+const getNotifierUrl = () => {
+  if (typeof window !== 'undefined') {
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    if (isDev) {
+      return 'http://localhost:5002/hubs'
+    }
+    // Production: use same origin (assumes reverse proxy routes /hubs to Notifier.Api)
+    return `${window.location.origin}/hubs`
+  }
+  return ''
+}
 
 export function useNotificationHub(
   baseUrl: string,
@@ -15,7 +27,7 @@ export function useNotificationHub(
   callbackRef.current = onHolidayDetected
 
   useEffect(() => {
-    const url = baseUrl || defaultUrl
+    const url = baseUrl || getNotifierUrl()
     console.log(`[SignalR] Connecting to ${url}/notifications with userId: ${userId}`)
     
     const connection = new signalR.HubConnectionBuilder()

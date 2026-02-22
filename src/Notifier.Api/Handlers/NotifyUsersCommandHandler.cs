@@ -25,6 +25,9 @@ public class NotifyUsersCommandHandler : IHandleMessages<NotifyUsersCommand>
         using var activity = ActivitySource.StartActivity("NotifyUsers");
         activity?.SetTag("userCount", message.UserIds.Count);
         activity?.SetTag("country", message.CountryCode);
+        
+        _logger.LogInformation("Received NotifyUsersCommand: {Country} - {Name} for {Count} users: {UserIds}", 
+            message.CountryCode, message.Name, message.UserIds.Count, string.Join(", ", message.UserIds));
 
         var payload = new
         {
@@ -39,6 +42,7 @@ public class NotifyUsersCommandHandler : IHandleMessages<NotifyUsersCommand>
 
         foreach (var userId in message.UserIds)
         {
+            _logger.LogInformation("Sending HolidayDetected to SignalR group: {UserId}", userId);
             await _hubContext.Clients.Group(userId).SendAsync("HolidayDetected", payload, context.CancellationToken);
         }
 

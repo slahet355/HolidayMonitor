@@ -23,7 +23,7 @@ public class HolidayPollingWorker : BackgroundService
         _messageSession = messageSession;
         _logger = logger;
         _config = config;
-        _interval = TimeSpan.FromHours(_config.GetValue("PollingIntervalHours", 1));
+        _interval = TimeSpan.FromHours(_config.GetValue("PollingIntervalHours", 1.0));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,6 +55,9 @@ public class HolidayPollingWorker : BackgroundService
 
         var countryCodes = _config.GetSection("CountriesToMonitor").Get<List<string>>()
             ?? new List<string> { "US", "GB", "DE", "FR", "CA", "AU" };
+        
+        _logger.LogInformation("Starting holiday poll. Today: {Today}, Looking ahead: {Days} days, Countries: {Countries}", 
+            today.ToString("yyyy-MM-dd"), lookAheadDays, string.Join(", ", countryCodes));
 
         // Build list of dates to check (today + next N days)
         var datesToCheck = new List<DateTime>();
@@ -88,6 +91,9 @@ public class HolidayPollingWorker : BackgroundService
             {
                 var checkDateStr = checkDate.ToString("yyyy-MM-dd");
                 var matchingHolidays = holidays.Where(h => string.Equals(h.Date, checkDateStr, StringComparison.Ordinal)).ToList();
+                
+                _logger.LogDebug("Checking {Country} for date {Date}: found {Count} holidays", 
+                    countryCode, checkDateStr, matchingHolidays.Count);
 
                 foreach (var h in matchingHolidays)
                 {

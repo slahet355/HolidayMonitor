@@ -16,31 +16,48 @@ export function useNotificationHub(
 
   useEffect(() => {
     const url = baseUrl || defaultUrl
+    console.log(`[SignalR] Connecting to ${url}/notifications with userId: ${userId}`)
+    
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${url}/notifications`, { withCredentials: true })
+      .withUrl(`${url}/notifications?userId=${encodeURIComponent(userId)}`, { withCredentials: true })
       .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
       .build()
 
     connection.on('HolidayDetected', (payload: HolidayAlert) => {
+      console.log('[SignalR] Received HolidayDetected:', payload)
       callbackRef.current(payload)
     })
 
     connection
       .start()
       .then(() => {
+        console.log(`[SignalR] Connected successfully with userId: ${userId}`)
         setConnected(true)
-        connection.invoke('SetUserId', userId).catch(() => {})
+        connection.invoke('SetUserId', userId).catch((err) => {
+          console.error('[SignalR] SetUserId failed:', err)
+        })
       })
-      .catch(() => setConnected(false))
+      .catch((err) => {
+        console.error('[SignalR] Connection failed:', err)
+        setConnected(false)
+      })
 
-    connection.onclose(() => setConnected(false))
-    connection.onreconnected(() => {
+    connection.onclose((error) => {
+      console.log('[SignalR] Connection closed', error)
+      setConnected(false)
+    })
+    connection.onreconnected((connectionId) => {
+      console.log('[SignalR] Reconnected:', connectionId)
       setConnected(true)
-      connection.invoke('SetUserId', userId).catch(() => {})
+      connection.invoke('SetUserId', userId).catch((err) => {
+        console.error('[SignalR] SetUserId on reconnect failed:', err)
+      })
     })
 
     connectionRef.current = connection
     return () => {
+      console.log('[SignalR] Disconnecting...')
       connection.stop().catch(() => {})
       connectionRef.current = null
     }
@@ -49,7 +66,10 @@ export function useNotificationHub(
   useEffect(() => {
     const conn = connectionRef.current
     if (conn && connected) {
-      conn.invoke('SetUserId', userId).catch(() => {})
+      console.log(`[SignalR] Re-registering userId: ${userId}`)
+      conn.invoke('SetUserId', userId).catch((err) => {
+        console.error('[SignalR] SetUserId failed:', err)
+      })
     }
   }, [userId, connected])
 

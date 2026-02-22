@@ -24,8 +24,19 @@ public class PublicHolidayDetectedHandler : IHandleMessages<PublicHolidayDetecte
         using var activity = ActivitySource.StartActivity("ProcessHolidayDetected");
         activity?.SetTag("country", message.CountryCode);
         activity?.SetTag("holiday", message.Name);
+        
+        _logger.LogInformation("Received PublicHolidayDetected: {Country} - {Name} on {Date}", 
+            message.CountryCode, message.Name, message.Date.ToString("yyyy-MM-dd"));
 
         var userIds = await _subscriptions.GetUserIdsSubscribedToCountryAsync(message.CountryCode, context.CancellationToken);
+        
+        _logger.LogInformation("Found {Count} subscribers for {Country}", userIds.Count, message.CountryCode);
+        
+        if (userIds.Count > 0)
+        {
+            _logger.LogInformation("Subscriber UserIds: {UserIds}", string.Join(", ", userIds));
+        }
+        
         if (userIds.Count == 0)
         {
             _logger.LogDebug("No subscribers for {Country} - {Name}", message.CountryCode, message.Name);

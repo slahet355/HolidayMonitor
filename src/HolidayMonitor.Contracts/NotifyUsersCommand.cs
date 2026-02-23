@@ -5,7 +5,7 @@ namespace HolidayMonitor.Contracts;
 /// </summary>
 public class NotifyUsersCommand : ICommand
 {
-    public List<string> UserIds { get; set; } = new();
+    public List<string> UserIds { get; set; } = [];
     public string CountryCode { get; set; } = string.Empty;
     public string CountryName { get; set; } = string.Empty;
     public DateTime Date { get; set; }

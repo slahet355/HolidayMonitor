@@ -1,9 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Notifier.Api.Hubs;
 
-[AllowAnonymous]
 public class NotificationHub : Hub
 {
     private readonly ILogger<NotificationHub> _logger;

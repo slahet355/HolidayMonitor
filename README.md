@@ -2,6 +2,10 @@
 
 A dashboard that monitors public holiday APIs and sends notifications when countries are off-work. Built as event-driven microservices with .NET 8 and React.
 
+## Application UI
+
+![Holiday Monitor UI](images/app-screenshot.png)
+
 ## Architecture
 
 | Service | Role | API / Stack |

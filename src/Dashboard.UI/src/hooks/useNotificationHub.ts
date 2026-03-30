@@ -2,15 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import * as signalR from '@microsoft/signalr'
 import type { HolidayAlert } from '../types'
 
-// For development: connect directly to Notifier.Api on port 5002
-// Avoids proxy issues with WebSocket negotiation through Vite dev server
 const getNotifierUrl = () => {
   if (typeof window !== 'undefined') {
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    if (isDev) {
-      return 'http://localhost:5002/hubs'
-    }
-    // Production: use same origin (assumes reverse proxy routes /hubs to Notifier.Api)
+    if (isDev) return 'http://localhost:5002/hubs'
     return `${window.location.origin}/hubs`
   }
   return ''
@@ -18,7 +13,7 @@ const getNotifierUrl = () => {
 
 export function useNotificationHub(
   baseUrl: string,
-  userId: string,
+  accessToken: string,
   onHolidayDetected: (payload: HolidayAlert) => void
 ) {
   const [connected, setConnected] = useState(false)
@@ -27,11 +22,15 @@ export function useNotificationHub(
   callbackRef.current = onHolidayDetected
 
   useEffect(() => {
+    if (!accessToken) return
+
     const url = baseUrl || getNotifierUrl()
-    console.log(`[SignalR] Connecting to ${url}/notifications with userId: ${userId}`)
-    
+    console.log(`[SignalR] Connecting to ${url}/notifications`)
+
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${url}/notifications?userId=${encodeURIComponent(userId)}`, { withCredentials: true })
+      .withUrl(`${url}/notifications?access_token=${encodeURIComponent(accessToken)}`, {
+        withCredentials: true,
+      })
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Information)
       .build()
@@ -44,11 +43,8 @@ export function useNotificationHub(
     connection
       .start()
       .then(() => {
-        console.log(`[SignalR] Connected successfully with userId: ${userId}`)
+        console.log('[SignalR] Connected successfully')
         setConnected(true)
-        connection.invoke('SetUserId', userId).catch((err) => {
-          console.error('[SignalR] SetUserId failed:', err)
-        })
       })
       .catch((err) => {
         console.error('[SignalR] Connection failed:', err)
@@ -59,12 +55,9 @@ export function useNotificationHub(
       console.log('[SignalR] Connection closed', error)
       setConnected(false)
     })
-    connection.onreconnected((connectionId) => {
-      console.log('[SignalR] Reconnected:', connectionId)
+    connection.onreconnected(() => {
+      console.log('[SignalR] Reconnected')
       setConnected(true)
-      connection.invoke('SetUserId', userId).catch((err) => {
-        console.error('[SignalR] SetUserId on reconnect failed:', err)
-      })
     })
 
     connectionRef.current = connection
@@ -73,17 +66,7 @@ export function useNotificationHub(
       connection.stop().catch(() => {})
       connectionRef.current = null
     }
-  }, [baseUrl, userId])
-
-  useEffect(() => {
-    const conn = connectionRef.current
-    if (conn && connected) {
-      console.log(`[SignalR] Re-registering userId: ${userId}`)
-      conn.invoke('SetUserId', userId).catch((err) => {
-        console.error('[SignalR] SetUserId failed:', err)
-      })
-    }
-  }, [userId, connected])
+  }, [baseUrl, accessToken])
 
   return { connected }
 }

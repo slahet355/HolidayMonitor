@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { AuthPage } from './components/AuthPage'
 import { useNotificationHub } from './hooks/useNotificationHub'
 import { useSubscriptions } from './hooks/useSubscriptions'
 import { HolidayCard } from './components/HolidayCard'
@@ -8,22 +10,22 @@ import type { HolidayAlert } from './types'
 const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 const HUB_BASE = import.meta.env.VITE_HUB_BASE ?? ''
 
-export default function App() {
-  const [userId, setUserId] = useState(() => localStorage.getItem('holiday-monitor-userId') ?? 'demo-user')
+function Dashboard() {
+  const { user, logout } = useAuth()
   const [alerts, setAlerts] = useState<HolidayAlert[]>([])
-  const { countryCodes, setCountryCodes, loading: subsLoading } = useSubscriptions(API_BASE, userId)
-  const { connected } = useNotificationHub(HUB_BASE, userId, (payload) => {
-    setAlerts((prev) => [{ ...payload, id: `${payload.detectedAtUtc}-${payload.countryCode}` }, ...prev].slice(0, 50))
+
+  const { countryCodes, setCountryCodes, loading: subsLoading } = useSubscriptions(
+    API_BASE,
+    user!.accessToken
+  )
+  const { connected } = useNotificationHub(HUB_BASE, user!.accessToken, (payload) => {
+    setAlerts((prev) =>
+      [{ ...payload, id: `${payload.detectedAtUtc}-${payload.countryCode}` }, ...prev].slice(0, 50)
+    )
   })
 
-  useEffect(() => {
-    localStorage.setItem('holiday-monitor-userId', userId)
-  }, [userId])
-
   const handleCountriesChange = useCallback(
-    (codes: string[]) => {
-      setCountryCodes(codes)
-    },
+    (codes: string[]) => setCountryCodes(codes),
     [setCountryCodes]
   )
 
@@ -41,16 +43,21 @@ export default function App() {
                   connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
                 }`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    connected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                  }`}
+                />
                 {connected ? 'Live' : 'Connecting…'}
               </span>
-              <input
-                type="text"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="User ID"
-                className="w-36 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
+              <span className="text-sm text-slate-400">{user!.email}</span>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:border-slate-600 hover:text-white"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         </div>
@@ -74,7 +81,6 @@ export default function App() {
           </section>
           <aside>
             <SubscriptionPanel
-              userId={userId}
               countryCodes={countryCodes}
               loading={subsLoading}
               onCountriesChange={handleCountriesChange}
@@ -83,5 +89,27 @@ export default function App() {
         </div>
       </main>
     </div>
+  )
+}
+
+function AppContent() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <span className="text-slate-500 text-sm">Loading…</span>
+      </div>
+    )
+  }
+
+  return user ? <Dashboard /> : <AuthPage />
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }

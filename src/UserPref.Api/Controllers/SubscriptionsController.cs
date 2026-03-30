@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using UserPref.Api.Models;
 using UserPref.Api.Repositories;
 
@@ -6,6 +8,7 @@ namespace UserPref.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SubscriptionsController : ControllerBase
 {
     private readonly ISubscriptionRepository _repo;
@@ -17,20 +20,26 @@ public class SubscriptionsController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet("{userId}")]
-    public async Task<ActionResult<SubscriptionDto>> Get(string userId, CancellationToken ct)
+    [HttpGet]
+    public async Task<ActionResult<SubscriptionDto>> Get(CancellationToken ct)
     {
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (userId == null) return Unauthorized();
+
         var sub = await _repo.GetByUserIdAsync(userId, ct);
-        if (sub == null)
-            return Ok(new SubscriptionDto { UserId = userId, CountryCodes = new List<string>() });
-        return Ok(new SubscriptionDto { UserId = sub.UserId, CountryCodes = sub.CountryCodes });
+        return Ok(new SubscriptionDto
+        {
+            UserId = userId,
+            CountryCodes = sub?.CountryCodes ?? new List<string>()
+        });
     }
 
-    [HttpPut("{userId}")]
-    public async Task<ActionResult<SubscriptionDto>> Put(string userId, [FromBody] SubscriptionDto dto, CancellationToken ct)
+    [HttpPut]
+    public async Task<ActionResult<SubscriptionDto>> Put([FromBody] SubscriptionDto dto, CancellationToken ct)
     {
-        if (dto.UserId != null && dto.UserId != userId)
-            return BadRequest("UserId in body must match route.");
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (userId == null) return Unauthorized();
+
         var sub = await _repo.UpsertAsync(userId, dto.CountryCodes ?? new List<string>(), ct);
         return Ok(new SubscriptionDto { UserId = sub.UserId, CountryCodes = sub.CountryCodes });
     }

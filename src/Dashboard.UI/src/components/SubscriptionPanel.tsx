@@ -16,13 +16,12 @@ const COMMON_COUNTRIES = [
 ]
 
 interface Props {
-  userId: string
   countryCodes: string[]
   loading: boolean
   onCountriesChange: (codes: string[]) => void
 }
 
-export function SubscriptionPanel({ userId: _userId, countryCodes, loading, onCountriesChange }: Props) {
+export function SubscriptionPanel({ countryCodes, loading, onCountriesChange }: Props) {
   const [newCode, setNewCode] = useState('')
 
   const add = (code: string) => {
